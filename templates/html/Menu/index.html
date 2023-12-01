@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <script src="https://kit.fontawesome.com/c3e7b9f4c8.js" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/templates/css/Menu/index.css">
+    <title>Home</title>
+</head>
+<body>
+<header>
+    <ul>
+        {{ if .IsLoggedIn }}
+        <li><a href="/logout">Déconnexion</a></li>
+        <li><a href="/websocket">Discussion</a></li>
+        {{ else }}
+        <li><a href="/connexion">Connexion</a></li>
+        <li><a href="/inscription">Inscription</a></li>
+        {{ end }}
+    </ul>
+    <h1>Bienvenue {{ .Username }}!</h1>
+</header>
+<input type="checkbox" id="check" />
+<label for="check">
+    <i class="fa-solid fa-bars" id="btn"></i>
+    <i class="fas fa-times" id="cancel"></i>
+</label>
+<div class="sidebar">
+    <img src="/templates/img/FORUMNB.png" alt="Logo du forum" id="menuLogo">
+    <ul id="menuLI">
+        <li>
+            <a href="/profile" id="profile-link">
+                <i class="fa-solid fa-user"></i>
+                Profile
+            </a>
+        </li>
+        <li>
+            <a href="/postes" id="posts-link"><i class="fa-solid fa-paper-plane"></i>Mes posts</a>
+        </li>
+        <li>
+            <a href="/about"><i class="far fa-question-circle"></i>About</a>
+        </li>
+        <li>
+            <a href="/services" id="services-link"><i class="fas fa-sliders-h"></i>Services</a>
+        </li>
+    </ul>
+</div>
+<div class="box-container">
+    <a href="/Echec">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/echec.jpg" alt="" />
+            <div class="info">
+                <p>Echec</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Foot">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/Foot.jpg" alt="" />
+            <div class="info">
+                <p>Foot</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Rugby">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/rugby.jpeg" alt="" />
+            <div class="info">
+                <p>Rugby</p>
+            </div>
+        </div>
+    </a>
+    <a href="/MMA">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/mma.jpeg" alt="" />
+            <div class="info">
+                <p>MMA</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Box">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/box.jpg" alt="" />
+            <div class="info">
+                <p>Box</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Musique">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/Musique.jpg" alt="" />
+            <div class="info">
+                <p>Musique</p>
+            </div>
+        </div>
+    </a>
+    <a href="/PC">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/PC.jpg" alt="" />
+            <div class="info">
+                <p>PC</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Ecole">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/" alt="" />
+            <div class="info">
+                <p>Ecole</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Stage">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/" alt="" />
+            <div class="info">
+                <p>Stage</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Emploie">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/" alt="" />
+            <div class="info">
+                <p>Chercheur D'emploie</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Meuble">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/meuble.jpg" alt="" />
+            <div class="info">
+                <p>Meuble</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Mirroir">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/mirroir.jpg" alt="" />
+            <div class="info">
+                <p>Mirroir</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Lit">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/lit.jpg" alt="" />
+            <div class="info">
+                <p>Lit</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Youtubeurs">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/youtuber.jpg" alt="" />
+            <div class="info">
+                <p>Youtubeurs</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Navigateurs">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/navigateurs.jpeg" alt="" />
+            <div class="info">
+                <p>Navigateurs</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Nourriture">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/nourriture.jpeg" alt="" />
+            <div class="info">
+                <p>Nourriture</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Bacterie">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/bacterie.jpg" alt="" />
+            <div class="info">
+                <p>Bactérie</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Virus">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/virus.jpg" alt="" />
+            <div class="info">
+                <p>Virus</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Nucleaire">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/nucleaire.jpeg" alt="" />
+            <div class="info">
+                <p>Nucléaire</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Histoire">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/napoleon.jpg" alt="" />
+            <div class="info">
+                <p>Histoire</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Livres">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/livres.png" alt="" />
+            <div class="info">
+                <p>Livres</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Romans">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/Romans.jpg" alt="" />
+            <div class="info">
+                <p>Romans</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Cyber">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/Cybersecurity.jpeg" alt="" />
+            <div class="info">
+                <p>Cybersécuriter</p>
+            </div>
+        </div>
+    </a>
+    <a href="/Programmation">
+        <div class="artiste-box">
+            <img class="image-box" src="/templates/img/programmation.jpeg" alt="" />
+            <div class="info">
+                <p>Programmation</p>
+            </div>
+        </div>
+    </a>
+</div>
+</body>
+</html>

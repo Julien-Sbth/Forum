@@ -1,0 +1,50 @@
+/* Styles pour la zone de chat */
+.chat {
+    width: 80%;
+    margin: 20px auto;
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+}
+
+/* Styles pour les messages */
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.message p {
+    margin: 5px 0;
+}
+
+/* Styles pour les boutons Like et Dislike */
+.reaction-buttons {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.like-button,
+.dislike-button {
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    margin-right: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.like-button:hover,
+.dislike-button:hover {
+    background-color: #2980b9;
+}
+
+.likes-count,
+.dislikes-count {
+    margin-right: 5px;
+    font-weight: bold;
+}

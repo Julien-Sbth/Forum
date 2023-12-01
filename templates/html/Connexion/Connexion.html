@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <title>Login</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://kit.fontawesome.com/a81368914c.js"></script>
+    <link  rel="stylesheet" href="/templates/css/Connexion/connexion.css">
+</head>
+<body>
+<img class="wave" src="/templates/images/profile1.svg" alt="Login">
+<div class="container">
+    <div class="img">
+    </div>
+    <div class="login-content">
+        <form action="/connexion" class="sign-in-form" method="post">
+            <img src="/templates/img/profile.svg" alt="">
+            <h2 class="title">HANGMAN</h2>
+            <div class="input-div one">
+                <div class="i">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="div">
+                    <label for="username"></label>
+                    <input type="text" id="username" name="username" required placeholder="Entrez votre nom">
+                </div>
+            </div>
+            <div class="input-div pass">
+                <div class="i">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <div class="div">
+                    <label for="password"></label>
+                    <input type="password" id="password" name="password" required placeholder="Entrez votre mot de passe">
+                </div>
+            </div>
+            {{ if .Password }}
+            <p class="error-password">{{ .ErrorPassw0rd }}</p>
+            {{ end }}
+            <a href="/inscription" id="">Doesnt have an account ?</a>
+            <a href="/password" id="forgotPws">Forgot Password?</a>
+            <button id="log-in" class="btn" type="submit">Log in</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

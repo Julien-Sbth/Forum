@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription</title>
+    <link rel="stylesheet" href="/templates/css/Connexion/inscription.css">
+    <script src="https://kit.fontawesome.com/a81368914c.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+<img class="wave" src="/templates/images/profile1.svg" alt="Login">
+<div class="container">
+    <div class="img">
+    </div>
+    <div class="inscription-content">
+        <form action="/inscription" method="post">
+            <img src="/templates/images/undraw_male_avatar_g98d.svg" alt="">
+            <h2 class="title">HANGMAN</h2>
+            <div class="input-div one">
+                <div class="i">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="div">
+                    <label for="username"></label>
+                    <input type="text" id="username" name="username" required placeholder="Entrez votre pseudo">
+                </div>
+            </div>
+            {{ if .ExistingUsername }}
+            <p class="error-message">{{ .ErrorMessage }}</p>
+            {{ end }}
+            <div class="input-div pass">
+                <div class="i">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <div class="div">
+                    <label for="password"></label>
+                    <input type="password" id="password" name="password" required placeholder="Mot de passe">
+                </div>
+            </div>
+            <div class="input-div pass">
+                <div class="i">
+                    <i class="fa-solid fa-at"></i>
+                </div>
+                <div class="div">
+                    <label for="email"></label>
+                    <input type="text" id="email" name="email" required placeholder="Adresse Email">
+                </div>
+            </div>
+            {{ if .ExistingEmail }}
+            <p class="error-email">{{ .ErrorEmail }}</p>
+            {{ end }}
+            <br>
+            <button id="log-in" class="btn" type="submit">S'inscrire</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
