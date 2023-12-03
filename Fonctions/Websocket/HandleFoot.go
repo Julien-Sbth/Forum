@@ -2,6 +2,7 @@ package Websocket
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -10,11 +11,6 @@ import (
 	"net/http"
 	"strconv"
 )
-
-type Image struct {
-	ID   int
-	Data []byte
-}
 
 func HandleWebsocketFoot(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
@@ -31,9 +27,14 @@ func HandleWebsocketFoot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var oldMessages []Message
+
 	if username, ok := session.Values["username"].(string); ok {
-		// Récupérer les anciens messages depuis la base de données
 		oldMessages, err = getOldFootMessagesFromDB()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		imageList, err := getAllImageURLsFromDBFoot()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -44,6 +45,13 @@ func HandleWebsocketFoot(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		var imageDatas []ImageData
+		for _, imageURL := range imageList {
+			image := ImageData{
+				URL: imageURL,
+			}
+			imageDatas = append(imageDatas, image)
+		}
 
 		tmpl, err := template.ParseFiles("templates/html/Discussion/foot.html")
 		if err != nil {
@@ -52,14 +60,14 @@ func HandleWebsocketFoot(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data := struct {
-			Likes         int
-			Dislikes      int
+			URL           []ImageData
 			Username      string
+			LikesDislikes []LikesDislikes
 			Messages      []Message
 			Content       string
 			IsLoggedIn    bool
-			LikesDislikes []LikesDislikes
 		}{
+			URL:           imageDatas,
 			Username:      username,
 			LikesDislikes: oldLikes,
 			Messages:      oldMessages,
@@ -75,7 +83,7 @@ func HandleWebsocketFoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles("templates/html/Discussion/index.html")
+	tmpl, err := template.ParseFiles("templates/html/Discussion/foot.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -86,6 +94,46 @@ func HandleWebsocketFoot(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func getAllImageURLsFromDBFoot() ([]string, error) {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT data FROM FootImages")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var imageList []string
+	for rows.Next() {
+		var imageURL string
+		if err := rows.Scan(&imageURL); err != nil {
+			return nil, err
+		}
+		imageList = append(imageList, imageURL)
+	}
+
+	return imageList, nil
+}
+
+func saveImageToDBFoot(imageData string) error {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec("INSERT INTO FootImages (data) VALUES (?)", imageData)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func WebSocketHandlerFoot(w http.ResponseWriter, r *http.Request) {
@@ -115,23 +163,21 @@ func WebSocketHandlerFoot(w http.ResponseWriter, r *http.Request) {
 
 		msg.SocketID = conn.LocalAddr().String()
 
-		// Si un message contient une image, tu peux l'enregistrer
 		if msg.Image != "" {
-			// Sauvegarder l'image dans la base de données
 			err = saveImageToDBFoot(msg.Image)
 			if err != nil {
 				log.Println("Error saving image to database:", err)
 			}
-		} else {
-			// Si le message ne contient pas d'image, enregistrer le message texte
-			err = saveMessageToDBFoot(msg)
-			if err != nil {
-				log.Println("Error saving message to database:", err)
-			}
 		}
+
+		err = saveMessageToDBFoot(msg)
+		if err != nil {
+			log.Println("Error saving message to database:", err)
+		}
+
 		messages = append(messages, msg)
 
-		sendNewMessageToAllClientsExceptSender(msg, conn) // Send message to all clients except the sender
+		sendNewMessageToAllClientsExceptSender(msg, conn)
 	}
 }
 
@@ -142,7 +188,6 @@ func saveMessageToDBFoot(msg Message) error {
 	}
 	defer db.Close()
 
-	// Exécute la requête SQL pour insérer le message dans la table des messages
 	_, err = db.Exec("INSERT INTO foot (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
 	if err != nil {
 		return err
@@ -184,14 +229,12 @@ func getOldLikesDislikesFromDBFoot() ([]LikesDislikes, error) {
 }
 
 func LikesDislikesHandlerFoot(w http.ResponseWriter, r *http.Request) {
-	// Appel de la deuxième fonction pour récupérer les likes et dislikes à partir de la DB
 	likesDislikes, err := getOldLikesDislikesFromDBFoot()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Convertir les likes/dislikes en JSON et les renvoyer comme réponse
 	likesDislikesJSON, err := json.Marshal(likesDislikes)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -202,7 +245,6 @@ func LikesDislikesHandlerFoot(w http.ResponseWriter, r *http.Request) {
 	w.Write(likesDislikesJSON)
 }
 
-// Fonction pour récupérer les anciens messages depuis la base de données
 func getOldFootMessagesFromDB() ([]Message, error) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
@@ -267,7 +309,6 @@ func incrementDislikesFoot(messageID int) error {
 }
 
 func LikeHandlerFoot(w http.ResponseWriter, r *http.Request) {
-	// Récupérer l'ID du message depuis les données du formulaire
 	messageID := r.FormValue("id")
 	messageIDInt, err := strconv.Atoi(messageID)
 	if err != nil {
@@ -281,11 +322,10 @@ func LikeHandlerFoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/foot", http.StatusSeeOther)
+	http.Redirect(w, r, "/Foot", http.StatusSeeOther)
 }
 
 func DislikeHandlerFoot(w http.ResponseWriter, r *http.Request) {
-	// Récupérer l'ID du message depuis les données du formulaire
 	messageID := r.FormValue("id")
 	messageIDInt, err := strconv.Atoi(messageID)
 	if err != nil {
@@ -302,81 +342,37 @@ func DislikeHandlerFoot(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/foot", http.StatusSeeOther)
 }
 
-func saveImageToDBFoot(imageBase64 string) error {
+func UploadFoot(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
-		return err
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	defer db.Close()
 
-	// Exécute la requête SQL pour insérer l'image dans la table des images
-	_, err = db.Exec("INSERT INTO Images (Data) VALUES (?)", imageBase64)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func getImagesFromDB(db *sql.DB) ([]Image, error) {
-	rows, err := db.Query("SELECT ID, image FROM foot")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var images []Image
-	for rows.Next() {
-		var image Image
-		err := rows.Scan(&image.ID, &image.Data)
-		if err != nil {
-			return nil, err
-		}
-		images = append(images, image)
-	}
-	return images, nil
-}
-func DisplayImage(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	imageID := r.URL.Query().Get("id")
-	if imageID == "" {
-		http.Error(w, "ID de l'image manquant", http.StatusBadRequest)
-		return
-	}
-	var imageData []byte
-	err := db.QueryRow("SELECT image FROM foot WHERE ID = ?", imageID).Scan(&imageData)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "image/jpeg")
-	_, err = w.Write(imageData)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-func UploadImage(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	file, _, err := r.FormFile("image")
+	file, handler, err := r.FormFile("image")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer file.Close()
-	imageData, err := ioutil.ReadAll(file)
+
+	imageBytes, err := ioutil.ReadAll(file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	result, err := db.Exec("INSERT INTO foot (image) VALUES (?)", imageData)
+
+	imageBase64 := base64.StdEncoding.EncodeToString(imageBytes)
+
+	_, err = db.Exec("INSERT INTO FootImages (Data) VALUES (?)", imageBase64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	imageID, err := result.LastInsertId()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	imageURL := fmt.Sprintf("/image?id=%d", imageID)
+
+	imageURL := fmt.Sprintf("/image?id=%d", handler.Filename)
+
 	response := struct {
 		Success  bool   `json:"success"`
 		ImageURL string `json:"imageURL"`
@@ -389,8 +385,8 @@ func UploadImage(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
-	// Envoyer la réponse JSON
 	_, err = w.Write(responseJSON)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -398,7 +394,7 @@ func UploadImage(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 }
 
-func GetImagesHandler(w http.ResponseWriter, r *http.Request) {
+func ImageHandlerFoot(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -406,68 +402,31 @@ func GetImagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	images, err := getImagesFromDB(db) // Utilisation de la fonction pour récupérer les images depuis la base de données
+	rows, err := db.Query("SELECT data FROM FootImages")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer rows.Close()
 
-	// Convertir les images en JSON et les renvoyer comme réponse
-	imagesJSON, err := json.Marshal(images)
+	var imageURLs []string
+
+	for rows.Next() {
+		var imageURL string
+		err := rows.Scan(&imageURL)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		imageURLs = append(imageURLs, imageURL)
+	}
+
+	imageJSON, err := json.Marshal(imageURLs)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(imagesJSON)
-}
-
-func DisplayImageHandler(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("sqlite3", "database.sqlite")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
-
-	imageID := r.URL.Query().Get("id")
-	if imageID == "" {
-		http.Error(w, "ID de l'image manquant", http.StatusBadRequest)
-		return
-	}
-
-	DisplayImage(w, r, db) // Utilisation de la fonction pour afficher une image depuis la base de données
-}
-
-func UploadImageHandler(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("sqlite3", "database.sqlite")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
-
-	file, _, err := r.FormFile("image")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer file.Close()
-
-	imageData, err := ioutil.ReadAll(file)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = saveImageToDBFoot(string(imageData)) // Utilisation de la fonction pour sauvegarder l'image dans la base de données
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Répondre avec succès
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Image téléchargée avec succès!"))
+	w.Write(imageJSON)
 }

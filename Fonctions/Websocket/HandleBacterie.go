@@ -2,8 +2,11 @@ package Websocket
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -24,9 +27,14 @@ func HandleWebsocketBacterie(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var oldMessages []Message
+
 	if username, ok := session.Values["username"].(string); ok {
-		// Récupérer les anciens messages depuis la base de données
 		oldMessages, err = getOldBacterieMessagesFromDB()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		imageList, err := getAllImageURLsFromDBBacterie()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -37,22 +45,29 @@ func HandleWebsocketBacterie(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		var imageDatas []ImageData
+		for _, imageURL := range imageList {
+			image := ImageData{
+				URL: imageURL,
+			}
+			imageDatas = append(imageDatas, image)
+		}
 
-		tmpl, err := template.ParseFiles("templates/html/Discussion/bacterie.html")
+		tmpl, err := template.ParseFiles("templates/html/Discussion/lit.html")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		data := struct {
-			Likes         int
-			Dislikes      int
+			URL           []ImageData
 			Username      string
+			LikesDislikes []LikesDislikes
 			Messages      []Message
 			Content       string
 			IsLoggedIn    bool
-			LikesDislikes []LikesDislikes
 		}{
+			URL:           imageDatas,
 			Username:      username,
 			LikesDislikes: oldLikes,
 			Messages:      oldMessages,
@@ -79,6 +94,46 @@ func HandleWebsocketBacterie(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func getAllImageURLsFromDBBacterie() ([]string, error) {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT data FROM imagess")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var imageList []string
+	for rows.Next() {
+		var imageURL string
+		if err := rows.Scan(&imageURL); err != nil {
+			return nil, err
+		}
+		imageList = append(imageList, imageURL)
+	}
+
+	return imageList, nil
+}
+
+func saveImageToDBBacterie(imageData string) error {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec("INSERT INTO Bacterieimages (data) VALUES (?)", imageData)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func WebSocketHandlerBacterie(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +163,13 @@ func WebSocketHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 
 		msg.SocketID = conn.LocalAddr().String()
 
+		if msg.Image != "" {
+			err = saveImageToDBBacterie(msg.Image)
+			if err != nil {
+				log.Println("Error saving image to database:", err)
+			}
+		}
+
 		err = saveMessageToDBBacterie(msg)
 		if err != nil {
 			log.Println("Error saving message to database:", err)
@@ -115,7 +177,7 @@ func WebSocketHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 
 		messages = append(messages, msg)
 
-		sendNewMessageToAllClientsExceptSender(msg, conn) // Send message to all clients except the sender
+		sendNewMessageToAllClientsExceptSender(msg, conn)
 	}
 }
 
@@ -126,8 +188,7 @@ func saveMessageToDBBacterie(msg Message) error {
 	}
 	defer db.Close()
 
-	// Exécute la requête SQL pour insérer le message dans la table des messages
-	_, err = db.Exec("INSERT INTO bacterie (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
+	_, err = db.Exec("INSERT INTO lit (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
 	if err != nil {
 		return err
 	}
@@ -142,7 +203,7 @@ func getOldLikesDislikesFromDBBacterie() ([]LikesDislikes, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, likes, dislikes FROM bacterie ORDER BY id")
+	rows, err := db.Query("SELECT id, likes, dislikes FROM lit ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -168,14 +229,12 @@ func getOldLikesDislikesFromDBBacterie() ([]LikesDislikes, error) {
 }
 
 func LikesDislikesHandlerBacterie(w http.ResponseWriter, r *http.Request) {
-	// Appel de la deuxième fonction pour récupérer les likes et dislikes à partir de la DB
-	likesDislikes, err := getOldLikesDislikesFromDBBacterie()
+	likesDislikes, err := getOldLikesDislikesFromDBLit()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Convertir les likes/dislikes en JSON et les renvoyer comme réponse
 	likesDislikesJSON, err := json.Marshal(likesDislikes)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -186,7 +245,6 @@ func LikesDislikesHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 	w.Write(likesDislikesJSON)
 }
 
-// Fonction pour récupérer les anciens messages depuis la base de données
 func getOldBacterieMessagesFromDB() ([]Message, error) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
@@ -194,7 +252,7 @@ func getOldBacterieMessagesFromDB() ([]Message, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, username, content FROM bacterie ORDER BY id")
+	rows, err := db.Query("SELECT id, username, content FROM lit ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +285,7 @@ func incrementLikesBacterie(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE cyber SET likes = likes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE lit SET likes = likes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -242,7 +300,7 @@ func incrementDislikesBacterie(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE bacterie SET dislikes = dislikes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE lit SET dislikes = dislikes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -251,7 +309,6 @@ func incrementDislikesBacterie(messageID int) error {
 }
 
 func LikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
-	// Récupérer l'ID du message depuis les données du formulaire
 	messageID := r.FormValue("id")
 	messageIDInt, err := strconv.Atoi(messageID)
 	if err != nil {
@@ -259,17 +316,16 @@ func LikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementLikesBacterie(messageIDInt)
+	err = incrementLikesLit(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/bacterie", http.StatusSeeOther)
+	http.Redirect(w, r, "/lit", http.StatusSeeOther)
 }
 
 func DislikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
-	// Récupérer l'ID du message depuis les données du formulaire
 	messageID := r.FormValue("id")
 	messageIDInt, err := strconv.Atoi(messageID)
 	if err != nil {
@@ -277,11 +333,100 @@ func DislikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementDislikesBacterie(messageIDInt)
+	err = incrementDislikesLit(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/bacterie", http.StatusSeeOther)
+	http.Redirect(w, r, "/lit", http.StatusSeeOther)
+}
+
+func UploadBacterie(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	file, handler, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	imageBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	imageBase64 := base64.StdEncoding.EncodeToString(imageBytes)
+
+	_, err = db.Exec("INSERT INTO BacteriesImages (Data) VALUES (?)", imageBase64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	imageURL := fmt.Sprintf("/image?id=%d", handler.Filename)
+
+	response := struct {
+		Success  bool   `json:"success"`
+		ImageURL string `json:"imageURL"`
+	}{
+		Success:  true,
+		ImageURL: imageURL,
+	}
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(responseJSON)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func ImageHandlerBacterie(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT data FROM BacterieImages")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var imageURLs []string
+
+	for rows.Next() {
+		var imageURL string
+		err := rows.Scan(&imageURL)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		imageURLs = append(imageURLs, imageURL)
+	}
+
+	imageJSON, err := json.Marshal(imageURLs)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(imageJSON)
 }

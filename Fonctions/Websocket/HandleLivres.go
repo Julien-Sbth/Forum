@@ -2,8 +2,11 @@ package Websocket
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -24,9 +27,14 @@ func HandleWebsocketLivres(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var oldMessages []Message
+
 	if username, ok := session.Values["username"].(string); ok {
-		// Récupérer les anciens messages depuis la base de données
-		oldMessages, err = getOldBacterieMessagesFromDB()
+		oldMessages, err = getOldLivresMessagesFromDB()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		imageList, err := getAllImageURLsFromDBLivres()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -37,6 +45,13 @@ func HandleWebsocketLivres(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		var imageDatas []ImageData
+		for _, imageURL := range imageList {
+			image := ImageData{
+				URL: imageURL,
+			}
+			imageDatas = append(imageDatas, image)
+		}
 
 		tmpl, err := template.ParseFiles("templates/html/Discussion/livres.html")
 		if err != nil {
@@ -45,14 +60,14 @@ func HandleWebsocketLivres(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data := struct {
-			Likes         int
-			Dislikes      int
+			URL           []ImageData
 			Username      string
+			LikesDislikes []LikesDislikes
 			Messages      []Message
 			Content       string
 			IsLoggedIn    bool
-			LikesDislikes []LikesDislikes
 		}{
+			URL:           imageDatas,
 			Username:      username,
 			LikesDislikes: oldLikes,
 			Messages:      oldMessages,
@@ -68,7 +83,7 @@ func HandleWebsocketLivres(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles("templates/html/Discussion/index.html")
+	tmpl, err := template.ParseFiles("templates/html/Discussion/livres.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -79,6 +94,46 @@ func HandleWebsocketLivres(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func getAllImageURLsFromDBLivres() ([]string, error) {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT data FROM LivresImages")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var imageList []string
+	for rows.Next() {
+		var imageURL string
+		if err := rows.Scan(&imageURL); err != nil {
+			return nil, err
+		}
+		imageList = append(imageList, imageURL)
+	}
+
+	return imageList, nil
+}
+
+func saveImageToDBLivres(imageData string) error {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec("INSERT INTO LivresImages (data) VALUES (?)", imageData)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func WebSocketHandlerLivres(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +163,13 @@ func WebSocketHandlerLivres(w http.ResponseWriter, r *http.Request) {
 
 		msg.SocketID = conn.LocalAddr().String()
 
+		if msg.Image != "" {
+			err = saveImageToDBLivres(msg.Image)
+			if err != nil {
+				log.Println("Error saving image to database:", err)
+			}
+		}
+
 		err = saveMessageToDBLivres(msg)
 		if err != nil {
 			log.Println("Error saving message to database:", err)
@@ -115,7 +177,7 @@ func WebSocketHandlerLivres(w http.ResponseWriter, r *http.Request) {
 
 		messages = append(messages, msg)
 
-		sendNewMessageToAllClientsExceptSender(msg, conn) // Send message to all clients except the sender
+		sendNewMessageToAllClientsExceptSender(msg, conn)
 	}
 }
 
@@ -126,8 +188,7 @@ func saveMessageToDBLivres(msg Message) error {
 	}
 	defer db.Close()
 
-	// Exécute la requête SQL pour insérer le message dans la table des messages
-	_, err = db.Exec("INSERT INTO livres (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
+	_, err = db.Exec("INSERT INTO Livres (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
 	if err != nil {
 		return err
 	}
@@ -142,7 +203,7 @@ func getOldLikesDislikesFromDBLivres() ([]LikesDislikes, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, likes, dislikes FROM livres ORDER BY id")
+	rows, err := db.Query("SELECT id, likes, dislikes FROM Livres ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -168,14 +229,12 @@ func getOldLikesDislikesFromDBLivres() ([]LikesDislikes, error) {
 }
 
 func LikesDislikesHandlerLivres(w http.ResponseWriter, r *http.Request) {
-	// Appel de la deuxième fonction pour récupérer les likes et dislikes à partir de la DB
 	likesDislikes, err := getOldLikesDislikesFromDBLivres()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Convertir les likes/dislikes en JSON et les renvoyer comme réponse
 	likesDislikesJSON, err := json.Marshal(likesDislikes)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -186,7 +245,6 @@ func LikesDislikesHandlerLivres(w http.ResponseWriter, r *http.Request) {
 	w.Write(likesDislikesJSON)
 }
 
-// Fonction pour récupérer les anciens messages depuis la base de données
 func getOldLivresMessagesFromDB() ([]Message, error) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
@@ -194,7 +252,7 @@ func getOldLivresMessagesFromDB() ([]Message, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, username, content FROM livres ORDER BY id")
+	rows, err := db.Query("SELECT id, username, content FROM Livres ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +285,7 @@ func incrementLikesLivres(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE livres SET likes = likes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE Livres SET likes = likes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -242,7 +300,7 @@ func incrementDislikesLivres(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE livres SET dislikes = dislikes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE Livres SET dislikes = dislikes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -251,7 +309,6 @@ func incrementDislikesLivres(messageID int) error {
 }
 
 func LikeHandlerLivres(w http.ResponseWriter, r *http.Request) {
-	// Récupérer l'ID du message depuis les données du formulaire
 	messageID := r.FormValue("id")
 	messageIDInt, err := strconv.Atoi(messageID)
 	if err != nil {
@@ -259,17 +316,16 @@ func LikeHandlerLivres(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementLikesLivres(messageIDInt)
+	err = incrementLikesProgrammation(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/livres", http.StatusSeeOther)
+	http.Redirect(w, r, "/Livres", http.StatusSeeOther)
 }
 
 func DislikeHandlerLivres(w http.ResponseWriter, r *http.Request) {
-	// Récupérer l'ID du message depuis les données du formulaire
 	messageID := r.FormValue("id")
 	messageIDInt, err := strconv.Atoi(messageID)
 	if err != nil {
@@ -277,11 +333,100 @@ func DislikeHandlerLivres(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementDislikesLivres(messageIDInt)
+	err = incrementDislikesRomans(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/livres", http.StatusSeeOther)
+	http.Redirect(w, r, "/Livres", http.StatusSeeOther)
+}
+
+func UploadLivres(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	file, handler, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	imageBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	imageBase64 := base64.StdEncoding.EncodeToString(imageBytes)
+
+	_, err = db.Exec("INSERT INTO LivresImages (Data) VALUES (?)", imageBase64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	imageURL := fmt.Sprintf("/image?id=%d", handler.Filename)
+
+	response := struct {
+		Success  bool   `json:"success"`
+		ImageURL string `json:"imageURL"`
+	}{
+		Success:  true,
+		ImageURL: imageURL,
+	}
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(responseJSON)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func ImageHandlerLivres(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT data FROM LivresImages")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var imageURLs []string
+
+	for rows.Next() {
+		var imageURL string
+		err := rows.Scan(&imageURL)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		imageURLs = append(imageURLs, imageURL)
+	}
+
+	imageJSON, err := json.Marshal(imageURLs)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(imageJSON)
 }

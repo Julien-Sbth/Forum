@@ -2,8 +2,11 @@ package Websocket
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -24,9 +27,18 @@ func HandleWebsocketStage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var oldMessages []Message
+
 	if username, ok := session.Values["username"].(string); ok {
-		// Récupérer les anciens messages depuis la base de données
-		oldMessages, err = getOldStageMessagesFromDB()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		oldMessages, err = getOldVirusMessagesFromDB()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		imageList, err := getAllImageURLsFromDBStage()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -37,6 +49,13 @@ func HandleWebsocketStage(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		var imageDatas []ImageData
+		for _, imageURL := range imageList {
+			image := ImageData{
+				URL: imageURL,
+			}
+			imageDatas = append(imageDatas, image)
+		}
 
 		tmpl, err := template.ParseFiles("templates/html/Discussion/stage.html")
 		if err != nil {
@@ -45,14 +64,14 @@ func HandleWebsocketStage(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data := struct {
-			Likes         int
-			Dislikes      int
+			URL           []ImageData
 			Username      string
+			LikesDislikes []LikesDislikes
 			Messages      []Message
 			Content       string
 			IsLoggedIn    bool
-			LikesDislikes []LikesDislikes
 		}{
+			URL:           imageDatas,
 			Username:      username,
 			LikesDislikes: oldLikes,
 			Messages:      oldMessages,
@@ -68,7 +87,7 @@ func HandleWebsocketStage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles("templates/html/Discussion/index.html")
+	tmpl, err := template.ParseFiles("templates/html/Discussion/stage.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -79,6 +98,46 @@ func HandleWebsocketStage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func getAllImageURLsFromDBStage() ([]string, error) {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT data FROM StageImages")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var imageList []string
+	for rows.Next() {
+		var imageURL string
+		if err := rows.Scan(&imageURL); err != nil {
+			return nil, err
+		}
+		imageList = append(imageList, imageURL)
+	}
+
+	return imageList, nil
+}
+
+func saveImageToDBStage(imageData string) error {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec("INSERT INTO StageImages (data) VALUES (?)", imageData)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func WebSocketHandlerStage(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +167,13 @@ func WebSocketHandlerStage(w http.ResponseWriter, r *http.Request) {
 
 		msg.SocketID = conn.LocalAddr().String()
 
+		if msg.Image != "" {
+			err = saveImageToDBStage(msg.Image)
+			if err != nil {
+				log.Println("Error saving image to database:", err)
+			}
+		}
+
 		err = saveMessageToDBStage(msg)
 		if err != nil {
 			log.Println("Error saving message to database:", err)
@@ -115,7 +181,7 @@ func WebSocketHandlerStage(w http.ResponseWriter, r *http.Request) {
 
 		messages = append(messages, msg)
 
-		sendNewMessageToAllClientsExceptSender(msg, conn) // Send message to all clients except the sender
+		sendNewMessageToAllClientsExceptSender(msg, conn)
 	}
 }
 
@@ -126,7 +192,6 @@ func saveMessageToDBStage(msg Message) error {
 	}
 	defer db.Close()
 
-	// Exécute la requête SQL pour insérer le message dans la table des messages
 	_, err = db.Exec("INSERT INTO stage (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
 	if err != nil {
 		return err
@@ -168,14 +233,12 @@ func getOldLikesDislikesFromDBStage() ([]LikesDislikes, error) {
 }
 
 func LikesDislikesHandlerStage(w http.ResponseWriter, r *http.Request) {
-	// Appel de la deuxième fonction pour récupérer les likes et dislikes à partir de la DB
 	likesDislikes, err := getOldLikesDislikesFromDBStage()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Convertir les likes/dislikes en JSON et les renvoyer comme réponse
 	likesDislikesJSON, err := json.Marshal(likesDislikes)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -186,7 +249,6 @@ func LikesDislikesHandlerStage(w http.ResponseWriter, r *http.Request) {
 	w.Write(likesDislikesJSON)
 }
 
-// Fonction pour récupérer les anciens messages depuis la base de données
 func getOldStageMessagesFromDB() ([]Message, error) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
@@ -194,7 +256,7 @@ func getOldStageMessagesFromDB() ([]Message, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, username, content FROM stage ORDER BY id")
+	rows, err := db.Query("SELECT id, username, content FROM Stage ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +304,7 @@ func incrementDislikesStage(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE stage SET dislikes = dislikes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE Stage SET dislikes = dislikes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -251,7 +313,6 @@ func incrementDislikesStage(messageID int) error {
 }
 
 func LikeHandlerStage(w http.ResponseWriter, r *http.Request) {
-	// Récupérer l'ID du message depuis les données du formulaire
 	messageID := r.FormValue("id")
 	messageIDInt, err := strconv.Atoi(messageID)
 	if err != nil {
@@ -265,11 +326,10 @@ func LikeHandlerStage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/stage", http.StatusSeeOther)
+	http.Redirect(w, r, "/Stage", http.StatusSeeOther)
 }
 
 func DislikeHandlerStage(w http.ResponseWriter, r *http.Request) {
-	// Récupérer l'ID du message depuis les données du formulaire
 	messageID := r.FormValue("id")
 	messageIDInt, err := strconv.Atoi(messageID)
 	if err != nil {
@@ -283,5 +343,94 @@ func DislikeHandlerStage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/stage", http.StatusSeeOther)
+	http.Redirect(w, r, "/Stage", http.StatusSeeOther)
+}
+
+func UploadStage(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	file, handler, err := r.FormFile("image")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	imageBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	imageBase64 := base64.StdEncoding.EncodeToString(imageBytes)
+
+	_, err = db.Exec("INSERT INTO StageImages (Data) VALUES (?)", imageBase64)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	imageURL := fmt.Sprintf("/image?id=%d", handler.Filename)
+
+	response := struct {
+		Success  bool   `json:"success"`
+		ImageURL string `json:"imageURL"`
+	}{
+		Success:  true,
+		ImageURL: imageURL,
+	}
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(responseJSON)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func ImageHandlerStage(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("sqlite3", "database.sqlite")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT data FROM StageImages")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var imageURLs []string
+
+	for rows.Next() {
+		var imageURL string
+		err := rows.Scan(&imageURL)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		imageURLs = append(imageURLs, imageURL)
+	}
+
+	imageJSON, err := json.Marshal(imageURLs)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(imageJSON)
 }

@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="/templates/css/Menu/discussion.css">
+</head>
+<body>
+<div class="chat">
+    <input type="text" id="messageInput" required placeholder="Entrez votre message ici">
+    <input type="button" id="sendButton" value="Envoyer">
+
+    <input type="file" id="inputImage">
+    <button onclick="envoyerImage()">Envoyer Image</button>
+    <div id="imageContainer"></div>
+
+    <div id="chatBox">
+        {{ range .Messages }}
+        <div class="message">
+            <p><strong>{{ .Username }}:</strong> {{ .Content }}</p>
+            <div class="reaction-buttons">
+                <form action="/likesStage" method="post">
+                    <input type="hidden" name="id" value="{{ .ID }}">
+                    <button type="submit" class="like-button">Like</button>
+                    <span class="likes-count">{{ .Likes }}</span>
+                </form>
+
+                <form action="/dislikesStage" method="post">
+                    <input type="hidden" name="id" value="{{ .ID }}">
+                    <button type="submit" class="dislike-button">Dislike</button>
+                    <span class="dislikes-count">{{ .Dislikes }}</span>
+                </form>
+            </div>
+        </div>
+        {{ end }}
+    </div>
+</div>
+<script src="/templates/js/Discussion/stage.js"></script>
+</body>
+</html>
