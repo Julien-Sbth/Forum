@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,11 +11,14 @@
     <input type="text" id="messageInput" required placeholder="Entrez votre message ici">
     <input type="button" id="sendButton" value="Envoyer">
 
+    <input type="file" id="inputImage">
+    <button onclick="envoyerImage()">Envoyer Image</button>
+    <div id="imageContainer"></div>
+
     <div id="chatBox">
         {{ range .Messages }}
         <div class="message">
             <p><strong>{{ .Username }}:</strong> {{ .Content }}</p>
-
             <div class="reaction-buttons">
                 <form action="/likesNavigateurs" method="post">
                     <input type="hidden" name="id" value="{{ .ID }}">
@@ -32,130 +36,6 @@
         {{ end }}
     </div>
 </div>
-<script>
-    const username = "{{ .Username }}";
-    const socket = new WebSocket("wss://localhost:443/wsNavigateurs");
-
-    socket.onopen = (event) => {
-        console.log("WebSocket connection opened.");
-    };
-
-    socket.onmessage = (event) => {
-        console.log("Received message:", event.data);
-        const msg = JSON.parse(event.data);
-        displayMessage(msg);
-    };
-
-    socket.onclose = (event) => {
-        console.log("WebSocket connection closed.");
-    };
-
-    function displayMessage(msg) {
-        const chatBox = document.getElementById("chatBox");
-        const newMessage = document.createElement('div');
-        newMessage.innerHTML = `<div class="message">
-                                <p><strong>${msg.Username}:</strong> ${msg.Content}</p>
-                                <div class="reaction-buttons">
-                                    <form action="/likesHistoire" method="post">
-                                        <input type="hidden" name="id" value="${msg.ID}">
-                                        <button type="submit" class="like-button">Like</button>
-                                        <span class="likes-count">${msg.Likes}</span>
-                                    </form>
-                                    <form action="/dislikesHistoire" method="post">
-                                        <input type="hidden" name="id" value="${msg.ID}">
-                                        <button type="submit" class="dislike-button">Dislike</button>
-                                        <span class="dislikes-count">${msg.Dislikes}</span>
-                                    </form>
-                                </div>
-                            </div>`;
-
-        chatBox.appendChild(newMessage);
-    }
-
-    document.getElementById("sendButton").addEventListener("click", () => {
-        const messageInput = document.getElementById("messageInput");
-        const message = messageInput.value;
-
-        const likes = 0; // Vous pouvez initialiser le nombre de likes à 0
-        const dislikes = 0; // Vous pouvez initialiser le nombre de dislikes à 0
-
-        const msg = {
-            Username: username,
-            Content: message,
-            SocketID: socket.id,
-            Likes: likes,
-            Dislikes: dislikes,
-        };
-
-        socket.send(JSON.stringify(msg));
-        messageInput.value = "";
-
-        // Afficher le message avec les boutons Like et Dislike
-        displayMessage(msg);
-    });
-
-    document.getElementById("chatBox").addEventListener("click", async (event) => {
-        event.preventDefault();
-        const { target } = event;
-        if (target.classList.contains('like-button') || target.classList.contains('dislike-button')) {
-            const messageDiv = target.closest('.message');
-            const likesCount = messageDiv.querySelector('.likes-count');
-            const dislikesCount = messageDiv.querySelector('.dislikes-count');
-
-            let url = '';
-            if (target.classList.contains('like-button')) {
-                likesCount.textContent = parseInt(likesCount.textContent) + 1;
-                url = '/likesNavigateurs'; // URL pour la requête de Like
-            } else {
-                dislikesCount.textContent = parseInt(dislikesCount.textContent) + 1;
-                url = '/dislikesNavigateurs'; // URL pour la requête de Dislike
-            }
-
-            const messageID = messageDiv.querySelector('input[name="id"]').value;
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `id=${messageID}`,
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok.');
-                }
-            } catch (error) {
-                console.error('Fetch Error:', error);
-                // Gérez l'erreur ici, par exemple, afficher un message à l'utilisateur
-            }
-        }
-    });
-    // Fonction pour récupérer les likes et dislikes via une requête AJAX
-    async function fetchLikesDislikes() {
-        try {
-            const response = await fetch('/LikesDislikesNavigateurs');
-            if (!response.ok) {
-                throw new Error('Network response was not ok.');
-            }
-            return await response.json();
-        } catch (error) {
-            console.error('Fetch Error:', error);
-            return [];
-        }
-    }
-
-    fetchLikesDislikes().then((likesDislikes) => {
-        console.log('Likes and Dislikes:', likesDislikes);
-        // Mettre à jour les éléments HTML avec les données récupérées
-        likesDislikes.forEach((ld) => {
-            const messageDiv = document.querySelector(`input[value="${ld.ID}"]`).closest('.message');
-            messageDiv.querySelector('.likes-count').textContent = ld.Likes;
-            messageDiv.querySelector('.dislikes-count').textContent = ld.Dislikes;
-        });
-    });
-
-
-</script>
+<script src="/templates/js/Discussion/navigateurs.js"></script>
 </body>
 </html>

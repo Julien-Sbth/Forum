@@ -1,35 +1,41 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Envoi d'image</title>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="/templates/css/Menu/discussion.css">
 </head>
 <body>
-<h1>Envoi d'image</h1>
-<form action="/upload" method="post" enctype="multipart/form-data">
-    <input type="file" name="image" accept="image/*">
-    <input type="submit" value="Envoyer">
-</form>
+<div class="chat">
+    <input type="text" id="messageInput" required placeholder="Entrez votre message ici">
+    <input type="button" id="sendButton" value="Envoyer">
 
-<h2>Images enregistrées</h2>
-<div id="imageContainer">
-    <!-- Ici seront affichées les images récupérées de la base de données -->
+    <input type="file" id="inputImage">
+    <button onclick="envoyerImage()">Envoyer Image</button>
+    <div id="imageContainer"></div>
+
+    <div id="chatBox">
+        {{ range .Messages }}
+        <div class="message">
+            <p><strong>{{ .Username }}:</strong> {{ .Content }}</p>
+            <div class="reaction-buttons">
+                <form action="/likesFoot" method="post">
+                    <input type="hidden" name="id" value="{{ .ID }}">
+                    <button type="submit" class="like-button">Like</button>
+                    <span class="likes-count">{{ .Likes }}</span>
+                </form>
+
+                <form action="/dislikesFoot" method="post">
+                    <input type="hidden" name="id" value="{{ .ID }}">
+                    <button type="submit" class="dislike-button">Dislike</button>
+                    <span class="dislikes-count">{{ .Dislikes }}</span>
+                </form>
+            </div>
+        </div>
+        {{ end }}
+    </div>
 </div>
-
-<script>
-    // JavaScript pour récupérer les images de la base de données et les afficher
-    fetch("/getImages")
-        .then(response => response.json())
-        .then(images => {
-            const imageContainer = document.getElementById('imageContainer');
-            images.forEach(image => {
-                const img = document.createElement('img');
-                img.src = `/displayImage?id=${image.ID}`;
-                imageContainer.appendChild(img);
-            });
-        })
-        .catch(error => {
-            console.error('Erreur lors de la récupération des images :', error);
-        });
-</script>
+<script src="/templates/js/Discussion/foot.js"></script>
 </body>
 </html>
