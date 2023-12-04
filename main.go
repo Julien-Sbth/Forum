@@ -80,6 +80,14 @@ func main() {
 	http.HandleFunc("/uploadHistoire", Websocket.UploadHistoire)
 	http.HandleFunc("/getImageHistoire/", Websocket.ImageHandlerHistoire)
 
+	http.HandleFunc("/Box", Websocket.HandleWebsocketHistoire)
+	http.HandleFunc("/LikesDislikesBox", Websocket.LikesDislikesHandlerHistoire)
+	http.HandleFunc("/likesBox", Websocket.LikeHandlerHistoire)
+	http.HandleFunc("/dislikesBox", Websocket.DislikeHandlerHistoire)
+	http.HandleFunc("/wsBox", Websocket.WebSocketHandlerHistoire)
+	http.HandleFunc("/uploadBox", Websocket.UploadHistoire)
+	http.HandleFunc("/getImageBox/", Websocket.ImageHandlerHistoire)
+
 	http.HandleFunc("/Lit", Websocket.HandleWebsocketLit)
 	http.HandleFunc("/LikesDislikesLit", Websocket.LikesDislikesHandlerLit)
 	http.HandleFunc("/likesLit", Websocket.LikeHandlerLit)
