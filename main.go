@@ -23,9 +23,6 @@ func main() {
 
 	http.HandleFunc("/", Menu.HandlePlay)
 	http.HandleFunc("/profile", Menu.HandleProfile)
-	http.HandleFunc("/postes", Menu.HandlePostes)
-	http.HandleFunc("/services", Menu.HandleService)
-	http.HandleFunc("/about", Menu.HandleAbout)
 	http.HandleFunc("/logout", Connexion.HandleLogout)
 	http.HandleFunc("/connexion", Connexion.HandleConnexion)
 	http.HandleFunc("/inscription", Connexion.HandleInscription)
