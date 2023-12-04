@@ -5,11 +5,12 @@
     <title>Title</title>
 </head>
 <body>
+ <!-- To be continued -->
 <h1>Bienvenue {{ .Username }}!</h1>
 <p>Voici les postes de l'utilisateur : {{ .Username }}</p>
 <p>Voici les likes et dislikes de l'utilisateur : {{ .Username }}</p>
-
-<p>Compte crée le : DateInscriptions</p>
+<p>Voici le token pour {{.Username}} : {{.Token}}</p>
+<p>Compte crée le : {{ .DateInscription}}</p>
 
 </body>
 </html>
