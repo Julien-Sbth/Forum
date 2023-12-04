@@ -73,7 +73,7 @@ func HandleInscription(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			return // Arrête le traitement car le nom d'utilisateur existe déjà
+			return
 		}
 
 		emailExists, err := checkEmailExists(db, email)
@@ -111,19 +111,22 @@ func HandleInscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Insertion des données dans la base de données avec le token
 		_, err = db.Exec("INSERT INTO utilisateurs (username, password, email, reset_token) VALUES (?, ?, ?, ?)", username, hashedPassword, email, token)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// Si l'insertion s'est faite avec succès, redirige vers la page de connexion
+		_, err = db.Exec("UPDATE utilisateurs SET date_inscription = CURRENT_TIMESTAMP WHERE username = ?", username)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		http.Redirect(w, r, "/connexion", http.StatusFound)
 		return
 	}
 
-	// Rendu de la page d'inscription si la méthode HTTP n'est pas POST
 	tmpl, err := template.ParseFiles("templates/html/Connexion/inscription.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

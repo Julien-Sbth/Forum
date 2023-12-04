@@ -2,8 +2,7 @@ package Connexion
 
 import (
 	"database/sql"
-	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"net/http"
 )
@@ -51,9 +50,8 @@ func HandleForgetPassword(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		hashedPassword := newPassword // Tu dois hasher le nouveau mot de passe ici
-
-		_, err = db.Exec("UPDATE utilisateurs SET reset_token = ? WHERE username = ?", nextResetToken, username)
+		// Hasher le nouveau mot de passe avec bcrypt
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -66,10 +64,23 @@ func HandleForgetPassword(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Créer le lien de réinitialisation avec le token généré
-		resetLink := fmt.Sprintf("https://localhost:443/reset-password?token=%s", nextResetToken)
+		// Passer le token généré au modèle
+		data := struct {
+			Token string
+		}{
+			Token: nextResetToken,
+		}
 
-		// Rediriger vers la page de réinitialisation du mot de passe avec le lien
-		http.Redirect(w, r, resetLink, http.StatusFound)
+		tmpl, err := template.ParseFiles("templates/html/Connexion/ForgetPassword.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Afficher la page avec le token généré
+		if err := tmpl.Execute(w, data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
