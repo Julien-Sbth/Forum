@@ -46,11 +46,10 @@
     socket.onmessage = (event) => {
         console.log("Received message:", event.data);
         const msg = JSON.parse(event.data);
-        displayMessage(msg);
         if (msg.ImageURL) {
             displayImage(msg.ImageURL);
         } else {
-            displayMessage(msg);
+            displayReceivedMessage(msg);
         }
     };
 

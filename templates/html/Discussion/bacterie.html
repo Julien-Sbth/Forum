@@ -19,6 +19,7 @@
         {{ range .Messages }}
         <div class="message">
             <p><strong>{{ .Username }}:</strong> {{ .Content }}</p>
+            <div id="username" data-username="{{ .Username }}"></div>
             <div class="reaction-buttons">
                 <form action="/likesBacterie" method="post">
                     <input type="hidden" name="id" value="{{ .ID }}">
@@ -46,11 +47,10 @@
     socket.onmessage = (event) => {
         console.log("Received message:", event.data);
         const msg = JSON.parse(event.data);
-        displayMessage(msg);
         if (msg.ImageURL) {
             displayImage(msg.ImageURL);
         } else {
-            displayMessage(msg);
+            displayReceivedMessage(msg);
         }
     };
 

@@ -36,6 +36,7 @@
         {{ end }}
     </div>
 </div>
+<script src="/templates/js/Discussion/mirroir.js"></script>
 <script>
     const username = "{{ .Username }}";
     const socket = new WebSocket("wss://localhost:443/wsMirroir");
@@ -46,11 +47,10 @@
     socket.onmessage = (event) => {
         console.log("Received message:", event.data);
         const msg = JSON.parse(event.data);
-        displayMessage(msg);
         if (msg.ImageURL) {
             displayImage(msg.ImageURL);
         } else {
-            displayMessage(msg);
+            displayReceivedMessage(msg);
         }
     };
 
@@ -68,7 +68,7 @@
         }
 
         const messageContent = document.createElement("p");
-        messageContent.innerHTML = `<strong>${msg.Username}:</strong> ${msg.Content}`;
+        messageContent.innerHTML = `<strong>${username}:</strong> ${msg.Content}`;
         newMessage.appendChild(messageContent);
 
         if (msg.Image) {
