@@ -38,7 +38,7 @@
 </div>
 <script>
     const username = "{{ .Username }}";
-    const socket = new WebSocket("wss://localhost:443/wsHistoire");
+    const socket = new WebSocket("wss://localhost:443/wsLit");
 
     socket.onopen = (event) => {
         console.log("WebSocket connection opened.");
@@ -81,7 +81,7 @@
         reactionButtons.classList.add("reaction-buttons");
 
         const likeForm = document.createElement("form");
-        likeForm.action = "/likesHistoire";
+        likeForm.action = "/likesLit";
         likeForm.method = "post";
 
         const likeInput = document.createElement("input");
@@ -103,7 +103,7 @@
         likeForm.appendChild(likesCount);
 
         const dislikeForm = document.createElement("form");
-        dislikeForm.action = "/dislikesHistoire";
+        dislikeForm.action = "/dislikesLit";
         dislikeForm.method = "post";
 
         const dislikeInput = document.createElement("input");
@@ -178,10 +178,10 @@
             let url = '';
             if (target.classList.contains('like-button')) {
                 likesCount.textContent = parseInt(likesCount.textContent) + 1;
-                url = '/likesHistoire';
+                url = '/likesLit';
             } else {
                 dislikesCount.textContent = parseInt(dislikesCount.textContent) + 1;
-                url = '/dislikesHistoire';
+                url = '/dislikesLit';
             }
             const messageID = messageDiv.querySelector('input[name="id"]').value;
 
@@ -204,7 +204,7 @@
     });
     async function fetchLikesDislikes() {
         try {
-            const response = await fetch('/LikesDislikesHistoire');
+            const response = await fetch('/LikesDislikesLit');
             if (!response.ok) {
                 throw new Error('Network response was not ok.');
             }
@@ -248,7 +248,7 @@
         const formData = new FormData();
         formData.append('image', fichier);
 
-        fetch('https://localhost:443/uploadHistoire', {
+        fetch('https://localhost:443/uploadLit', {
             method: 'POST',
             body: formData
         })
@@ -277,7 +277,7 @@
         chatBox.appendChild(newImage);
     }
     function getImagesForId(id) {
-        fetch(`/getImageHistoire?id=${id}`)
+        fetch(`/getImageLit?id=${id}`)
             .then(response => response.json())
             .then(images => {
                 const imageContainer = document.getElementById("imageContainer");
