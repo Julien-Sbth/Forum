@@ -2,15 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Profile Page</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .profile {
+            text-align: center;
+        }
+        .posts {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
- <!-- To be continued -->
-<h1>Bienvenue {{ .Username }}!</h1>
-<p>Voici les postes de l'utilisateur : {{ .Username }}</p>
-<p>Voici les likes et dislikes de l'utilisateur : {{ .Username }}</p>
-<p>Voici le token pour {{.Username}} : {{.Token}}</p>
-<p>Compte crée le : {{ .DateInscription}}</p>
-
+<div class="profile">
+    <h1>Bienvenue {{ .Username }}!</h1>
+    <p>Voici les postes de l'utilisateur : {{ .Username }}</p>
+    <ul class="posts">
+        {{ .Poste }}
+    </ul>
+    <p>Voici les likes et dislikes de l'utilisateur : {{ .Username }}</p>
+    <p>Voici le token pour {{.Username}} : {{.Token}}</p>
+    <p>Compte créé le : {{ .DateInscription }}</p>
+</div>
 </body>
 </html>
