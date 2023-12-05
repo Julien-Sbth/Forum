@@ -1,24 +1,32 @@
 # Forum
 
-# Not Finish For the Moment
+##### Work in Progress
 
-This project had already been started before but I decided to start from scratch.
+##### This project was previously initiated, but I've chosen to start a new.
 
-Previous versions did not meet my expectations, hence this new approach.
+##### To utilize this code, follow these steps:
 
-To use this code, follow these steps:
+## 1. Download SQLite 
+Click [Here](https://www.sqlite.org/download.html) for download SQlite
 
-## 1. Download SQlite
+##### It's necessary for using SQLite in the project.
 
-##  Click [Here](https://www.sqlite.org/download.html) for download SQlite
+## 2. Download TDM-GCC
 
-For the moment I choose SQlite but in the future I change to a another database (postgreSQL, MySQL)
+##### Click [here](https://sourceforge.net/projects/tdm-gcc/) to download TDM-GCC.
 
-## 2 You also need Docker to build the project in the dockerFile
+##### TDM-GCC allows you to compile SQLITE
 
-In this project, you can post anything you can (messages, don’t like the pictures at the moment but it will come with the future),
+##### I'm using TDM-GCC because it can compile SQLITE3 code effectively.
 
-I use several import like gorrilla session, crypto wbesocket securecookie.
+##### Currently, I've opted for SQLite, but I might switch to a different database (such as PostgreSQL or MySQL) in the future.
 
-The Gorrilla session can make a session for the user and it facilitates the task for it, the encryption of the password in the database and is more protected if the database is bypassed, websocket is to talk between users, securecookie is for a token if the user forgets their password.
+# Within this project
 
+ you can create various posts—messages are supported, while picture functionality is pending but planned for the future (works soon) but you can see in the code you can upload Images but they are displayed in the first row, (I am in the process of correcting this).
+
+## 
+
+## I'm employing several imports like Gorilla session, Crypto WebSocket, and SecureCookie.
+
+The Gorilla session establishes a user session, easing their interaction. The password encryption in the database enhances security against bypass attempts. WebSocket facilitates communication between users, and SecureCookie generates a token for users who forget their passwords.
