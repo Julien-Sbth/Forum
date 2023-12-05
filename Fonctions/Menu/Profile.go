@@ -18,8 +18,6 @@ func generateToken() (string, error) {
 	return base64.StdEncoding.EncodeToString(token), nil
 }
 
-// ...
-
 func HandleProfile(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
@@ -39,26 +37,6 @@ func HandleProfile(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		var storedToken string
-		err = db.QueryRow("SELECT reset_token FROM utilisateurs WHERE username = ?", username).Scan(&storedToken)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Stocker le nouveau token dans la base de données
-		nextResetToken, err := generateToken()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Mettre à jour le token dans la base de données
-		_, err = db.Exec("UPDATE utilisateurs SET reset_token = ? WHERE username = ?", nextResetToken, username)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 
 		var dateInscription interface{}
 		err = db.QueryRow("SELECT date_inscription FROM utilisateurs WHERE username = ?", username).Scan(&dateInscription)
@@ -67,12 +45,41 @@ func HandleProfile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		nextResetToken, err := generateToken()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		tables := []string{"bacterie", "box", "cybersécuriter", "echec", "Ecole", "emploie", "foot", "histoire", "lit", "livres", "meuble", "mirroir", "mma", "musique", "navigateurs", "nourriture", "nucleaire", "pc", "programmation", "romans", "rugby", "stage", "virus", "youtubeurs"}
+
+		var contents []string
+
+		for _, table := range tables {
+			rows, err := db.Query("SELECT content FROM "+table+" WHERE username = ?", username)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer rows.Close()
+
+			for rows.Next() {
+				var content string
+				if err := rows.Scan(&content); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				contents = append(contents, content)
+			}
+		}
+
 		data := struct {
+			Poste           []string
 			DateInscription interface{}
 			Token           string
 			Username        string
 			IsLoggedIn      bool
 		}{
+			Poste:           contents,
 			DateInscription: dateInscription,
 			Username:        username,
 			IsLoggedIn:      true,
