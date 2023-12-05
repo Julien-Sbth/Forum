@@ -116,7 +116,6 @@ func HandleInscription(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		_, err = db.Exec("UPDATE utilisateurs SET date_inscription = CURRENT_TIMESTAMP WHERE username = ?", username)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
