@@ -333,7 +333,7 @@ func DislikeHandlerPC(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementDislikesRomans(messageIDInt)
+	err = incrementDislikesPC(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

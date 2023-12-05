@@ -103,7 +103,7 @@ func getAllImageURLsFromDBCyber() ([]string, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT data FROM CybersecuriterImages")
+	rows, err := db.Query("SELECT data FROM CybersécuriterImages")
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func saveImageToDBCyber(imageData string) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO CybersecuriterImages (data) VALUES (?)", imageData)
+	_, err = db.Exec("INSERT INTO CybersécuriterImages (data) VALUES (?)", imageData)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func saveMessageToDBCyber(msg Message) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO Cybersécuriter (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
+	_, err = db.Exec("INSERT INTO cybersecuriter (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func getOldLikesDislikesFromDBCyber() ([]LikesDislikes, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, likes, dislikes FROM Cybersécuriter ORDER BY id")
+	rows, err := db.Query("SELECT id, likes, dislikes FROM cybersecuriter ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func getOldCyberMessagesFromDB() ([]Message, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, username, content FROM Cybersécuriter ORDER BY id")
+	rows, err := db.Query("SELECT id, username, content FROM cybersecuriter ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func incrementLikesCyber(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE Cybersécuriter SET likes = likes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE cybersecuriter SET likes = likes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -300,7 +300,7 @@ func incrementDislikesCyber(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE Cybersécuriter SET dislikes = dislikes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE cybersecuriter SET dislikes = dislikes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -333,7 +333,7 @@ func DislikeHandlerCyber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementDislikesRomans(messageIDInt)
+	err = incrementDislikesCyber(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -365,7 +365,7 @@ func UploadCyber(w http.ResponseWriter, r *http.Request) {
 
 	imageBase64 := base64.StdEncoding.EncodeToString(imageBytes)
 
-	_, err = db.Exec("INSERT INTO CyberSecuriterImages (Data) VALUES (?)", imageBase64)
+	_, err = db.Exec("INSERT INTO CybersecuriterImages (Data) VALUES (?)", imageBase64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

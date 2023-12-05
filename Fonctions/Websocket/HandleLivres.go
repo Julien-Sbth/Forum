@@ -316,7 +316,7 @@ func LikeHandlerLivres(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementLikesProgrammation(messageIDInt)
+	err = incrementLikesLivres(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -333,7 +333,7 @@ func DislikeHandlerLivres(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementDislikesRomans(messageIDInt)
+	err = incrementDislikesLivres(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

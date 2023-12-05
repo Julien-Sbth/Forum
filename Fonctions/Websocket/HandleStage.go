@@ -33,7 +33,7 @@ func HandleWebsocketStage(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		oldMessages, err = getOldVirusMessagesFromDB()
+		oldMessages, err = getOldStageMessagesFromDB()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

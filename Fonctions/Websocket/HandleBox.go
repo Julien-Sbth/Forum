@@ -103,7 +103,7 @@ func getAllImageURLsFromDBBox() ([]string, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT data FROM imagess")
+	rows, err := db.Query("SELECT data FROM BoxImages")
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func saveImageToDBBox(imageData string) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO Boximages (data) VALUES (?)", imageData)
+	_, err = db.Exec("INSERT INTO box (data) VALUES (?)", imageData)
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func WebSocketHandlerBox(w http.ResponseWriter, r *http.Request) {
 		msg.SocketID = conn.LocalAddr().String()
 
 		if msg.Image != "" {
-			err = saveImageToDBBox(msg.Image)
+			err = saveImageToDBBacterie(msg.Image)
 			if err != nil {
 				log.Println("Error saving image to database:", err)
 			}
@@ -197,7 +197,6 @@ func saveMessageToDBBox(msg Message) error {
 }
 
 func getOldLikesDislikesFromDBBox() ([]LikesDislikes, error) {
-
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		return nil, err
@@ -317,13 +316,13 @@ func LikeHandlerBox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementLikesLit(messageIDInt)
+	err = incrementLikesBox(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/box", http.StatusSeeOther)
+	http.Redirect(w, r, "/Box", http.StatusSeeOther)
 }
 
 func DislikeHandlerBox(w http.ResponseWriter, r *http.Request) {
@@ -334,13 +333,13 @@ func DislikeHandlerBox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementDislikesLit(messageIDInt)
+	err = incrementDislikesBox(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/box", http.StatusSeeOther)
+	http.Redirect(w, r, "/Box", http.StatusSeeOther)
 }
 
 func UploadBox(w http.ResponseWriter, r *http.Request) {

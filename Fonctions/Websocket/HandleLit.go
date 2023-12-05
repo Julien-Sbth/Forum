@@ -47,7 +47,7 @@ func HandleWebsocketLit(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		imageList, err := getAllImageURLsFromDB()
+		imageList, err := getAllImageURLsFromDBLit()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -109,14 +109,14 @@ func HandleWebsocketLit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getAllImageURLsFromDB() ([]string, error) {
+func getAllImageURLsFromDBLit() ([]string, error) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		return nil, err
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT data FROM imagess")
+	rows, err := db.Query("SELECT data FROM Litimages")
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,6 @@ func saveMessageToDBLit(msg Message) error {
 	}
 	defer db.Close()
 
-	// Exécute la requête SQL pour insérer le message dans la table des messages
 	_, err = db.Exec("INSERT INTO lit (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
 	if err != nil {
 		return err

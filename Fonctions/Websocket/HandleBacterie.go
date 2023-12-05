@@ -53,7 +53,7 @@ func HandleWebsocketBacterie(w http.ResponseWriter, r *http.Request) {
 			imageDatas = append(imageDatas, image)
 		}
 
-		tmpl, err := template.ParseFiles("templates/html/Discussion/lit.html")
+		tmpl, err := template.ParseFiles("templates/html/Discussion/bacterie.html")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -83,7 +83,7 @@ func HandleWebsocketBacterie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles("templates/html/Discussion/index.html")
+	tmpl, err := template.ParseFiles("templates/html/Discussion/bacterie.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -128,7 +128,7 @@ func saveImageToDBBacterie(imageData string) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO Bacterieimages (data) VALUES (?)", imageData)
+	_, err = db.Exec("INSERT INTO images (data) VALUES (?)", imageData)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func saveMessageToDBBacterie(msg Message) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO lit (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
+	_, err = db.Exec("INSERT INTO bacterie (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func getOldLikesDislikesFromDBBacterie() ([]LikesDislikes, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, likes, dislikes FROM lit ORDER BY id")
+	rows, err := db.Query("SELECT id, likes, dislikes FROM bacterie ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +229,7 @@ func getOldLikesDislikesFromDBBacterie() ([]LikesDislikes, error) {
 }
 
 func LikesDislikesHandlerBacterie(w http.ResponseWriter, r *http.Request) {
-	likesDislikes, err := getOldLikesDislikesFromDBLit()
+	likesDislikes, err := getOldLikesDislikesFromDBBacterie()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -252,7 +252,7 @@ func getOldBacterieMessagesFromDB() ([]Message, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, username, content FROM lit ORDER BY id")
+	rows, err := db.Query("SELECT id, username, content FROM bacterie ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func incrementLikesBacterie(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE lit SET likes = likes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE bacterie SET likes = likes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -300,7 +300,7 @@ func incrementDislikesBacterie(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE lit SET dislikes = dislikes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE bacterie SET dislikes = dislikes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -316,13 +316,13 @@ func LikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementLikesLit(messageIDInt)
+	err = incrementLikesBacterie(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/lit", http.StatusSeeOther)
+	http.Redirect(w, r, "/bacterie", http.StatusSeeOther)
 }
 
 func DislikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
@@ -333,13 +333,13 @@ func DislikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementDislikesLit(messageIDInt)
+	err = incrementDislikesBacterie(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/lit", http.StatusSeeOther)
+	http.Redirect(w, r, "/bacterie", http.StatusSeeOther)
 }
 
 func UploadBacterie(w http.ResponseWriter, r *http.Request) {
@@ -365,7 +365,7 @@ func UploadBacterie(w http.ResponseWriter, r *http.Request) {
 
 	imageBase64 := base64.StdEncoding.EncodeToString(imageBytes)
 
-	_, err = db.Exec("INSERT INTO BacteriesImages (Data) VALUES (?)", imageBase64)
+	_, err = db.Exec("INSERT INTO BacterieImages (Data) VALUES (?)", imageBase64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
