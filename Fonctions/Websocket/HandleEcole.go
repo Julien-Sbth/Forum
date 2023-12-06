@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-func HandleWebsocketBacterie(w http.ResponseWriter, r *http.Request) {
+func HandleWebsocketEcole(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -29,18 +29,18 @@ func HandleWebsocketBacterie(w http.ResponseWriter, r *http.Request) {
 	var oldMessages []Message
 
 	if username, ok := session.Values["username"].(string); ok {
-		oldMessages, err = getOldBacterieMessagesFromDB()
+		oldMessages, err = getOldEcoleMessagesFromDB()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		imageList, err := getAllImageURLsFromDBBacterie()
+		imageList, err := getAllImageURLsFromDBEcole()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		var oldLikes []LikesDislikes
-		oldLikes, err = getOldLikesDislikesFromDBBacterie()
+		oldLikes, err = getOldLikesDislikesFromDBEcole()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -53,7 +53,7 @@ func HandleWebsocketBacterie(w http.ResponseWriter, r *http.Request) {
 			imageDatas = append(imageDatas, image)
 		}
 
-		tmpl, err := template.ParseFiles("templates/html/Discussion/bacterie.html")
+		tmpl, err := template.ParseFiles("templates/html/Discussion/ecole.html")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -83,7 +83,7 @@ func HandleWebsocketBacterie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles("templates/html/Discussion/bacterie.html")
+	tmpl, err := template.ParseFiles("templates/html/Discussion/ecole.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -96,14 +96,14 @@ func HandleWebsocketBacterie(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getAllImageURLsFromDBBacterie() ([]string, error) {
+func getAllImageURLsFromDBEcole() ([]string, error) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		return nil, err
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT data FROM BacterieImages")
+	rows, err := db.Query("SELECT data FROM EcoleImages")
 	if err != nil {
 		return nil, err
 	}
@@ -121,14 +121,14 @@ func getAllImageURLsFromDBBacterie() ([]string, error) {
 	return imageList, nil
 }
 
-func saveImageToDBBacterie(imageData string) error {
+func saveImageToDBEcole(imageData string) error {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO BacterieImages (data) VALUES (?)", imageData)
+	_, err = db.Exec("INSERT INTO EcoleImages (data) VALUES (?)", imageData)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func saveImageToDBBacterie(imageData string) error {
 	return nil
 }
 
-func WebSocketHandlerBacterie(w http.ResponseWriter, r *http.Request) {
+func WebSocketHandlerEcole(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -164,13 +164,13 @@ func WebSocketHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 		msg.SocketID = conn.LocalAddr().String()
 
 		if msg.Image != "" {
-			err = saveImageToDBBacterie(msg.Image)
+			err = saveImageToDBEcole(msg.Image)
 			if err != nil {
 				log.Println("Error saving image to database:", err)
 			}
 		}
 
-		err = saveMessageToDBBacterie(msg)
+		err = saveMessageToDBEcole(msg)
 		if err != nil {
 			log.Println("Error saving message to database:", err)
 		}
@@ -181,14 +181,14 @@ func WebSocketHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func saveMessageToDBBacterie(msg Message) error {
+func saveMessageToDBEcole(msg Message) error {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO Bacterie (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
+	_, err = db.Exec("INSERT INTO Ecole (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
 	if err != nil {
 		return err
 	}
@@ -196,14 +196,14 @@ func saveMessageToDBBacterie(msg Message) error {
 	return nil
 }
 
-func getOldLikesDislikesFromDBBacterie() ([]LikesDislikes, error) {
+func getOldLikesDislikesFromDBEcole() ([]LikesDislikes, error) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		return nil, err
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, likes, dislikes FROM Bacterie ORDER BY id")
+	rows, err := db.Query("SELECT id, likes, dislikes FROM Ecole ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -228,8 +228,8 @@ func getOldLikesDislikesFromDBBacterie() ([]LikesDislikes, error) {
 	return oldLikesDislikes, nil
 }
 
-func LikesDislikesHandlerBacterie(w http.ResponseWriter, r *http.Request) {
-	likesDislikes, err := getOldLikesDislikesFromDBBacterie()
+func LikesDislikesHandlerEcole(w http.ResponseWriter, r *http.Request) {
+	likesDislikes, err := getOldLikesDislikesFromDBEcole()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -245,14 +245,14 @@ func LikesDislikesHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 	w.Write(likesDislikesJSON)
 }
 
-func getOldBacterieMessagesFromDB() ([]Message, error) {
+func getOldEcoleMessagesFromDB() ([]Message, error) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		return nil, err
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, username, content FROM Bacterie ORDER BY id")
+	rows, err := db.Query("SELECT id, username, content FROM Ecole ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -278,14 +278,14 @@ func getOldBacterieMessagesFromDB() ([]Message, error) {
 	return oldMessages, nil
 }
 
-func incrementLikesBacterie(messageID int) error {
+func incrementLikesEcole(messageID int) error {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE Bacterie SET likes = likes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE Ecole SET likes = likes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -293,14 +293,14 @@ func incrementLikesBacterie(messageID int) error {
 	return nil
 }
 
-func incrementDislikesBacterie(messageID int) error {
+func incrementDislikesEcole(messageID int) error {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE Bacterie SET dislikes = dislikes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE Ecole SET dislikes = dislikes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -308,7 +308,7 @@ func incrementDislikesBacterie(messageID int) error {
 	return nil
 }
 
-func LikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
+func LikeHandlerEcole(w http.ResponseWriter, r *http.Request) {
 	messageID := r.FormValue("id")
 	messageIDInt, err := strconv.Atoi(messageID)
 	if err != nil {
@@ -316,7 +316,7 @@ func LikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementLikesBacterie(messageIDInt)
+	err = incrementLikesEcole(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -325,7 +325,7 @@ func LikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/Rugby", http.StatusSeeOther)
 }
 
-func DislikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
+func DislikeHandlerEcole(w http.ResponseWriter, r *http.Request) {
 	messageID := r.FormValue("id")
 	messageIDInt, err := strconv.Atoi(messageID)
 	if err != nil {
@@ -333,7 +333,7 @@ func DislikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementDislikesBacterie(messageIDInt)
+	err = incrementDislikesEcole(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -342,7 +342,7 @@ func DislikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/Bacterie", http.StatusSeeOther)
 }
 
-func UploadBacterie(w http.ResponseWriter, r *http.Request) {
+func UploadEcole(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -365,7 +365,7 @@ func UploadBacterie(w http.ResponseWriter, r *http.Request) {
 
 	imageBase64 := base64.StdEncoding.EncodeToString(imageBytes)
 
-	_, err = db.Exec("INSERT INTO BacterieImages (Data) VALUES (?)", imageBase64)
+	_, err = db.Exec("INSERT INTO EcoleImages (Data) VALUES (?)", imageBase64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -394,7 +394,7 @@ func UploadBacterie(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ImageHandlerBacterie(w http.ResponseWriter, r *http.Request) {
+func ImageHandlerEcole(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "database.sqlite")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -402,7 +402,7 @@ func ImageHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT data FROM BacterieImages")
+	rows, err := db.Query("SELECT data FROM EcoleImages")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

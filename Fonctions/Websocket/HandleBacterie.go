@@ -103,7 +103,7 @@ func getAllImageURLsFromDBBacterie() ([]string, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT data FROM imagess")
+	rows, err := db.Query("SELECT data FROM BacterieImages")
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func saveImageToDBBacterie(imageData string) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO images (data) VALUES (?)", imageData)
+	_, err = db.Exec("INSERT INTO BacterieImages (data) VALUES (?)", imageData)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func saveMessageToDBBacterie(msg Message) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO bacterie (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
+	_, err = db.Exec("INSERT INTO Bacterie (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func getOldLikesDislikesFromDBBacterie() ([]LikesDislikes, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, likes, dislikes FROM bacterie ORDER BY id")
+	rows, err := db.Query("SELECT id, likes, dislikes FROM Bacterie ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func getOldBacterieMessagesFromDB() ([]Message, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, username, content FROM bacterie ORDER BY id")
+	rows, err := db.Query("SELECT id, username, content FROM Bacterie ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func incrementLikesBacterie(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE bacterie SET likes = likes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE Bacterie SET likes = likes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -300,7 +300,7 @@ func incrementDislikesBacterie(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE bacterie SET dislikes = dislikes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE Bacterie SET dislikes = dislikes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -322,7 +322,7 @@ func LikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/bacterie", http.StatusSeeOther)
+	http.Redirect(w, r, "/Rugby", http.StatusSeeOther)
 }
 
 func DislikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
@@ -339,7 +339,7 @@ func DislikeHandlerBacterie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/bacterie", http.StatusSeeOther)
+	http.Redirect(w, r, "/Bacterie", http.StatusSeeOther)
 }
 
 func UploadBacterie(w http.ResponseWriter, r *http.Request) {
