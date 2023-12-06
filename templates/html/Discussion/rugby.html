@@ -56,6 +56,14 @@
     socket.onclose = (event) => {
         console.log("WebSocket connection closed.");
     };
+    function displayReceivedMessage(msg) {
+        const chatBox = document.getElementById("chatBox");
+        const existingMessage = chatBox.querySelector(`[data-id="${msg.ID}"]`);
+
+        if (!existingMessage) {
+            displayMessage(msg);
+        }
+    }
     function displayMessage(msg) {
         const chatBox = document.getElementById("chatBox");
         const newMessage = document.createElement('div');
@@ -276,7 +284,7 @@
         chatBox.appendChild(newImage);
     }
     function getImagesForId(id) {
-        fetch(`/getRugby?id=${id}`)
+        fetch(`/getImageRugby?id=${id}`)
             .then(response => response.json())
             .then(images => {
                 const imageContainer = document.getElementById("imageContainer");
