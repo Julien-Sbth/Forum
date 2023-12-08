@@ -19,7 +19,6 @@
         {{ range .Messages }}
         <div class="message">
             <p><strong>{{ .Username }}:</strong> {{ .Content }}</p>
-            <div id="username" data-username="{{ .Username }}"></div>
             <div class="reaction-buttons">
                 <form action="/likesBacterie" method="post">
                     <input type="hidden" name="id" value="{{ .ID }}">
@@ -57,6 +56,14 @@
     socket.onclose = (event) => {
         console.log("WebSocket connection closed.");
     };
+    function displayReceivedMessage(msg) {
+        const chatBox = document.getElementById("chatBox");
+        const existingMessage = chatBox.querySelector(`[data-id="${msg.ID}"]`);
+
+        if (!existingMessage) {
+            displayMessage(msg);
+        }
+    }
     function displayMessage(msg) {
         const chatBox = document.getElementById("chatBox");
         const newMessage = document.createElement('div');

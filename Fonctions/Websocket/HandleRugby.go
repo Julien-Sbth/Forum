@@ -103,7 +103,7 @@ func getAllImageURLsFromDBRugby() ([]string, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT data FROM RugbyImages")
+	rows, err := db.Query("SELECT data FROM EchecImages")
 	if err != nil {
 		return nil, err
 	}
@@ -316,13 +316,13 @@ func LikeHandlerRugby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementLikesRugby(messageIDInt)
+	err = incrementLikesEchec(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/stage", http.StatusSeeOther)
+	http.Redirect(w, r, "/Rugby", http.StatusSeeOther)
 }
 
 func DislikeHandlerRugby(w http.ResponseWriter, r *http.Request) {
@@ -339,7 +339,7 @@ func DislikeHandlerRugby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/Stage", http.StatusSeeOther)
+	http.Redirect(w, r, "/Echec", http.StatusSeeOther)
 }
 
 func UploadRugby(w http.ResponseWriter, r *http.Request) {

@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <link rel="stylesheet" href="/templates/css/Menu/discussion.css">
-    <script src="/templates/js/Discussion/foot.js"></script>
 </head>
 <body>
 <div class="chat">
@@ -57,6 +56,14 @@
     socket.onclose = (event) => {
         console.log("WebSocket connection closed.");
     };
+    function displayReceivedMessage(msg) {
+        const chatBox = document.getElementById("chatBox");
+        const existingMessage = chatBox.querySelector(`[data-id="${msg.ID}"]`);
+
+        if (!existingMessage) {
+            displayMessage(msg);
+        }
+    }
     function displayMessage(msg) {
         const chatBox = document.getElementById("chatBox");
         const newMessage = document.createElement('div');

@@ -316,13 +316,13 @@ func LikeHandlerFoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementLikesFoot(messageIDInt)
+	err = incrementLikesEchec(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/Foot", http.StatusSeeOther)
+	http.Redirect(w, r, "/foot", http.StatusSeeOther)
 }
 
 func DislikeHandlerFoot(w http.ResponseWriter, r *http.Request) {
@@ -333,7 +333,7 @@ func DislikeHandlerFoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementDislikesFoot(messageIDInt)
+	err = incrementDislikesEchec(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
