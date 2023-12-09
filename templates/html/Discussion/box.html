@@ -12,10 +12,7 @@
     <input type="button" id="sendButton" value="Envoyer">
 
     <input type="file" id="inputImage">
-    <button onclick="envoyerImage(document.getElementById('inputImage').files[0])">Envoyer Image</button>
-
     <div id="imageContainer"></div>
-
     <div id="chatBox">
         {{ range .Messages }}
         <div class="message" data-id="{{.ID}}">
@@ -26,7 +23,6 @@
                     <button type="submit" class="like-button">Like</button>
                     <span class="likes-count">{{ .Likes }}</span>
                 </form>
-                <!-- Modifiez votre code HTML pour stocker le nom d'utilisateur dans un attribut data-* -->
                 <div id="username" data-username="{{ .Username }}"></div>
                 <input type="hidden" name="id" value="{{ .ID }}" data-id="{{ .ID }}">
                 <input type="hidden" name="id" value="{{ .ID }}">
@@ -41,10 +37,7 @@
         {{ end }}
     </div>
 </div>
-<!-- Dans votre code côté serveur (par exemple, Go, Node.js, Python), créez un cookie -->
 <script src="/templates/js/Discussion/box.js"></script>
-<script>
-    document.cookie = "username={{ .Username }}";
-</script>
+<script>document.cookie = "username={{ .Username }}";</script>
 </body>
 </html>
