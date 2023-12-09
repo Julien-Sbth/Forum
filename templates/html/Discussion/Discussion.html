@@ -12,21 +12,22 @@
     <input type="button" id="sendButton" value="Envoyer">
 
     <input type="file" id="inputImage">
-    <button onclick="envoyerImage()">Envoyer Image</button>
     <div id="imageContainer"></div>
-
     <div id="chatBox">
         {{ range .Messages }}
-        <div class="message">
+        <div class="message" data-id="{{.ID}}">
             <p><strong>{{ .Username }}:</strong> {{ .Content }}</p>
             <div class="reaction-buttons">
-                <form action="/likesLit" method="post">
+                <form action="/likesBox" method="post">
                     <input type="hidden" name="id" value="{{ .ID }}">
                     <button type="submit" class="like-button">Like</button>
                     <span class="likes-count">{{ .Likes }}</span>
                 </form>
+                <div id="username" data-username="{{ .Username }}"></div>
+                <input type="hidden" name="id" value="{{ .ID }}" data-id="{{ .ID }}">
+                <input type="hidden" name="id" value="{{ .ID }}">
 
-                <form action="/dislikesLit" method="post">
+                <form action="/dislikesBox" method="post">
                     <input type="hidden" name="id" value="{{ .ID }}">
                     <button type="submit" class="dislike-button">Dislike</button>
                     <span class="dislikes-count">{{ .Dislikes }}</span>
@@ -36,6 +37,7 @@
         {{ end }}
     </div>
 </div>
-<script src="/templates/js/Discussion/discussion.js"></script>
+<script src="/templates/js/Discussion/box.js"></script>
+<script>document.cookie = "username={{ .Username }}";</script>
 </body>
 </html>
