@@ -316,7 +316,7 @@ func LikeHandlerFoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementLikesEchec(messageIDInt)
+	err = incrementLikesFoot(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -333,7 +333,7 @@ func DislikeHandlerFoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = incrementDislikesEchec(messageIDInt)
+	err = incrementDislikesFoot(messageIDInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
