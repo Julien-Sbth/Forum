@@ -77,14 +77,6 @@ func main() {
 	http.HandleFunc("/uploadEmploie", Websocket.UploadEmploie)
 	http.HandleFunc("/getImageEmploie/", Websocket.ImageHandlerEmploie)
 
-	http.HandleFunc("/Ecole", Websocket.HandleWebsocketEcole)
-	http.HandleFunc("/wsEcole", Websocket.WebSocketHandlerEcole)
-	http.HandleFunc("/likesEcole", Websocket.LikeHandlerEcole)
-	http.HandleFunc("/dislikesEcole", Websocket.DislikeHandlerEcole)
-	http.HandleFunc("/LikesDislikesEcole", Websocket.LikesDislikesHandlerEcole)
-	http.HandleFunc("/uploadEcole", Websocket.UploadEcole)
-	http.HandleFunc("/getImageEcole/", Websocket.ImageHandlerEcole)
-
 	http.HandleFunc("/Histoire", Websocket.HandleWebsocketHistoire)
 	http.HandleFunc("/LikesDislikesHistoire", Websocket.LikesDislikesHandlerHistoire)
 	http.HandleFunc("/likesHistoire", Websocket.LikeHandlerHistoire)
