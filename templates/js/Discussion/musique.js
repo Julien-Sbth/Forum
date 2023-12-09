@@ -1,5 +1,13 @@
-const username = "{{ .Username }}";
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+const username = getCookie("username") || "Default Username";
+
 const socket = new WebSocket("wss://localhost:443/wsMusique");
+const ID = "chatBox";
 
 socket.onopen = (event) => {
     console.log("WebSocket connection opened.");
@@ -7,11 +15,10 @@ socket.onopen = (event) => {
 socket.onmessage = (event) => {
     console.log("Received message:", event.data);
     const msg = JSON.parse(event.data);
-    displayMessage(msg);
     if (msg.ImageURL) {
         displayImage(msg.ImageURL);
     } else {
-        displayMessage(msg);
+        displayReceivedMessage(msg);
     }
 };
 
@@ -125,10 +132,10 @@ document.getElementById("sendButton").addEventListener("click", () => {
     } else {
         socket.send(JSON.stringify(msg));
         messageInput.value = "";
-
         displayMessage(msg);
     }
 });
+
 document.getElementById("chatBox").addEventListener("click", async (event) => {
     event.preventDefault();
     const { target } = event;
@@ -158,11 +165,16 @@ document.getElementById("chatBox").addEventListener("click", async (event) => {
             if (!response.ok) {
                 throw new Error('Network response was not ok.');
             }
+
+            const updatedLikesDislikes = await response.json();
+            likesCount.textContent = updatedLikesDislikes.likes;
+            dislikesCount.textContent = updatedLikesDislikes.dislikes;
         } catch (error) {
             console.error('Fetch Error:', error);
         }
     }
 });
+
 async function fetchLikesDislikes() {
     try {
         const response = await fetch('/LikesDislikesMusique');
@@ -175,13 +187,20 @@ async function fetchLikesDislikes() {
         return [];
     }
 }
-fetchLikesDislikes().then((likesDislikes) => {
-    console.log('Likes and Dislikes:', likesDislikes);
-    likesDislikes.forEach((ld) => {
-        const messageDiv = document.querySelector(`input[value="${ld.ID}"]`).closest('.message');
-        messageDiv.querySelector('.likes-count').textContent = ld.Likes;
-        messageDiv.querySelector('.dislikes-count').textContent = ld.Dislikes;
+fetchLikesDislikes().then((likesDislikesArray) => {
+    console.log('Likes and Dislikes Array:', likesDislikesArray);
+
+    likesDislikesArray.forEach((likesDislikes) => {
+        const { Likes, Dislikes, ID } = likesDislikes;
+
+        const messageDiv = document.querySelector(`[data-id="${ID}"]`);
+        if (messageDiv) {
+            messageDiv.querySelector('.likes-count').textContent = Likes;
+            messageDiv.querySelector('.dislikes-count').textContent = Dislikes;
+        }
     });
+}).catch(error => {
+    console.error('Une erreur s\'est produite :', error);
 });
 
 function afficherImageSelectionnee(event) {
@@ -220,28 +239,44 @@ function envoyerImage() {
             return response.text();
         })
         .then(data => {
-            alert('Image envoyée avec succès !');
+            if (data === 'success') {
+                alert('Image envoyée avec succès !');
+            } else {
+                throw new Error('Erreur lors de l\'envoi de l\'image.');
+            }
         })
         .catch(error => {
             console.error('Erreur :', error);
         });
 }
+
+
 function displayImage(imageURL) {
     const chatBox = document.getElementById("chatBox");
     const newImage = document.createElement("div");
     newImage.classList.add("message");
 
     const imageElement = document.createElement("img");
-    imageElement.src = imageURL;
+    imageElement.src = `data:image/png;base64,${imageURL}`;
     newImage.appendChild(imageElement);
 
     chatBox.appendChild(newImage);
 }
-function getImagesForId(id) {
-    fetch(`/getImageMusique?id=${id}`)
-        .then(response => response.json())
-        .then(images => {
-            const imageContainer = document.getElementById("imageContainer");
+
+
+async function getImagesForId(id) {
+    try {
+        const response = await fetch(`/getImageMusique?id=${id}`);
+        if (!response.ok) {
+            throw new Error('Network response was not ok.');
+        }
+
+        const images = await response.json();
+
+        const imageContainer = document.getElementById("imageContainer");
+        imageContainer.innerHTML = '';
+
+        if (images && Array.isArray(images) && images.length > 0) {
             images.forEach(imageURL => {
                 const imageElement = document.createElement("img");
                 imageElement.src = imageURL;
@@ -249,9 +284,24 @@ function getImagesForId(id) {
                 imageElement.style.maxWidth = "150px";
                 imageContainer.appendChild(imageElement);
             });
-        })
-        .catch(error => {
-            console.error('Erreur lors de la récupération des images :', error);
-        });
+        } else {
+            const noImageMessage = document.createElement("p");
+            noImageMessage.textContent = "Aucune image disponible pour cet ID.";
+            imageContainer.appendChild(noImageMessage);
+        }
+    } catch (error) {
+        console.error('Erreur lors de la récupération des images :', error);
+        const errorMessage = document.createElement("p");
+        errorMessage.textContent = "Une erreur s'est produite lors de la récupération des images.";
+        const imageContainer = document.getElementById("imageContainer");
+        imageContainer.innerHTML = '';
+        imageContainer.appendChild(errorMessage);
+    }
 }
-getImagesForId();
+getImagesForId()
+    .then(() => {
+        console.log('Récupération des images pour tout les ID est terminée.');
+    })
+    .catch(error => {
+        console.error('Une erreur s\'est produite :', error);
+    });
