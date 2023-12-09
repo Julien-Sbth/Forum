@@ -128,7 +128,7 @@ func saveImageToDBBox(imageData string) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO box (data) VALUES (?)", imageData)
+	_, err = db.Exec("INSERT INTO BoxImages (data) VALUES (?)", imageData)
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func WebSocketHandlerBox(w http.ResponseWriter, r *http.Request) {
 		msg.SocketID = conn.LocalAddr().String()
 
 		if msg.Image != "" {
-			err = saveImageToDBBacterie(msg.Image)
+			err = saveImageToDBBox(msg.Image)
 			if err != nil {
 				log.Println("Error saving image to database:", err)
 			}
@@ -188,7 +188,7 @@ func saveMessageToDBBox(msg Message) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO box (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
+	_, err = db.Exec("INSERT INTO Box (username, content, likes, dislikes) VALUES (?, ?, ?, ?)", msg.Username, msg.Content, msg.Likes, msg.Dislikes)
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func getOldLikesDislikesFromDBBox() ([]LikesDislikes, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, likes, dislikes FROM box ORDER BY id")
+	rows, err := db.Query("SELECT id, likes, dislikes FROM Box ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func getOldBoxMessagesFromDB() ([]Message, error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT id, username, content FROM box ORDER BY id")
+	rows, err := db.Query("SELECT id, username, content FROM Box ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func incrementLikesBox(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE box SET likes = likes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE Box SET likes = likes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
@@ -300,7 +300,7 @@ func incrementDislikesBox(messageID int) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE box SET dislikes = dislikes + 1 WHERE id = ?", messageID)
+	_, err = db.Exec("UPDATE Box SET dislikes = dislikes + 1 WHERE id = ?", messageID)
 	if err != nil {
 		return err
 	}
